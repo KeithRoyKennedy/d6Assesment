@@ -138,19 +138,26 @@ class InvoiceApp {
             const container = document.getElementById('recentInvoices');
             
             if (Array.isArray(data) && data.length > 0) {
-                container.innerHTML = data.slice(0, 5).map(invoice => `
-                    <div class="invoice-card">
-                        <div class="invoice-header">
-                            <strong>${invoice.invoice_number}</strong>
-                            <span class="status status-${invoice.status}">${invoice.status}</span>
+                container.innerHTML = data.slice(0, 5).map(invoice => {
+                    // Calculate total from subtotal and tax
+                    const subtotal = parseFloat(invoice.subtotal || 0);
+                    const tax = parseFloat(invoice.tax || 0);
+                    const total = subtotal + tax;
+                    
+                    return `
+                        <div class="invoice-card" onclick="window.open('/preview?id=${invoice.id}', '_blank', 'width=1000,height=800')" style="cursor: pointer;">
+                            <div class="invoice-header">
+                                <strong>${invoice.invoice_number}</strong>
+                                <span class="status status-${invoice.status}">${invoice.status}</span>
+                            </div>
+                            <div class="invoice-details">
+                                <p><i class="fas fa-user"></i> ${invoice.customer_name || 'N/A'}</p>
+                                <p><i class="fas fa-calendar"></i> ${invoice.invoice_date}</p>
+                                <p class="invoice-total"><i class="fas fa-dollar-sign"></i> ${total.toFixed(2)}</p>
+                            </div>
                         </div>
-                        <div class="invoice-details">
-                            <p><i class="fas fa-user"></i> ${invoice.customer_name || 'N/A'}</p>
-                            <p><i class="fas fa-calendar"></i> ${invoice.invoice_date}</p>
-                            <p class="invoice-total"><i class="fas fa-dollar-sign"></i> ${parseFloat(invoice.total).toFixed(2)}</p>
-                        </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             } else {
                 container.innerHTML = '<p class="no-data">No recent invoices</p>';
             }

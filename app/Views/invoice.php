@@ -25,6 +25,7 @@
         <header>
             <h1><i class="fas fa-file-invoice-dollar"></i> Invoice Capture System</h1>
             <p class="subtitle">Create and manage invoices</p>
+            <h3><i class="fa-brands fa-github"></i> <a href="https://github.com/KeithRoyKennedy/d6Assesment">https://github.com/KeithRoyKennedy/d6Assesment</a></h3>
         </header>
 
         <main>

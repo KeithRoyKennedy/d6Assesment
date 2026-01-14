@@ -1,6 +1,6 @@
 -- sql/schema.sql
-CREATE DATABASE IF NOT EXISTS invoice_system;
-USE invoice_system;
+CREATE DATABASE IF NOT EXISTS db;
+USE db;
 
 -- Customers table (pre-populated)
 CREATE TABLE customers (

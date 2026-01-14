@@ -1,0 +1,158 @@
+<?php
+// api.php
+require_once 'config.php';
+
+header('Content-Type: application/json');
+$db = Config::getDB();
+
+$action = $_GET['action'] ?? '';
+$response = ['success' => false, 'message' => ''];
+
+try {
+    switch ($action) {
+        case 'save_invoice':
+            $input = json_decode(file_get_contents('php://input'), true);
+            
+            // Validate input
+            $rules = [
+                'customer_id' => ['required' => true, 'numeric' => true],
+                'invoice_date' => ['required' => true, 'type' => 'date'],
+                'due_date' => ['required' => true, 'type' => 'date'],
+                'items' => ['required' => true]
+            ];
+            
+            $errors = Config::validateInput($input, $rules);
+            
+            if (!empty($errors)) {
+                $response['message'] = 'Validation failed';
+                $response['errors'] = $errors;
+                break;
+            }
+            
+            // Calculate totals
+            $subtotal = 0;
+            $tax_total = 0;
+            
+            foreach ($input['items'] as $item) {
+                $quantity = floatval($item['quantity']);
+                $unit_price = floatval($item['unit_price']);
+                $tax_rate = floatval($item['tax_rate']);
+                
+                $line_total = $quantity * $unit_price;
+                $line_tax = $line_total * ($tax_rate / 100);
+                
+                $subtotal += $line_total;
+                $tax_total += $line_tax;
+            }
+            
+            $total = $subtotal + $tax_total;
+            
+            // Generate invoice number
+            $invoice_number = Config::generateInvoiceNumber();
+            
+            // Start transaction
+            $db->beginTransaction();
+            
+            // Insert invoice
+            $stmt = $db->prepare("
+                INSERT INTO invoices 
+                (invoice_number, customer_id, invoice_date, due_date, subtotal, tax_total, total, notes, status) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft')
+            ");
+            
+            $stmt->execute([
+                $invoice_number,
+                $input['customer_id'],
+                $input['invoice_date'],
+                $input['due_date'],
+                $subtotal,
+                $tax_total,
+                $total,
+                $input['notes'] ?? ''
+            ]);
+            
+            $invoice_id = $db->lastInsertId();
+            
+            // Insert line items
+            $stmt = $db->prepare("
+                INSERT INTO invoice_items 
+                (invoice_id, item_id, description, quantity, unit_price, tax_rate, line_total) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ");
+            
+            foreach ($input['items'] as $item) {
+                $quantity = floatval($item['quantity']);
+                $unit_price = floatval($item['unit_price']);
+                $tax_rate = floatval($item['tax_rate']);
+                $line_total = $quantity * $unit_price;
+                
+                $stmt->execute([
+                    $invoice_id,
+                    $item['item_id'] ?: null,
+                    Config::sanitize($item['description']),
+                    $quantity,
+                    $unit_price,
+                    $tax_rate,
+                    $line_total
+                ]);
+            }
+            
+            $db->commit();
+            
+            $response['success'] = true;
+            $response['message'] = 'Invoice saved successfully';
+            $response['invoice_id'] = $invoice_id;
+            $response['invoice_number'] = $invoice_number;
+            break;
+            
+        case 'get_recent_invoices':
+            $limit = intval($_GET['limit'] ?? 5);
+            
+            $stmt = $db->prepare("
+                SELECT i.id, i.invoice_number, i.invoice_date, i.total, i.status, 
+                       c.name as customer_name 
+                FROM invoices i 
+                JOIN customers c ON i.customer_id = c.id 
+                ORDER BY i.created_at DESC 
+                LIMIT ?
+            ");
+            
+            $stmt->execute([$limit]);
+            $invoices = $stmt->fetchAll();
+            
+            $response['success'] = true;
+            $response['invoices'] = $invoices;
+            break;
+            
+        case 'get_customers':
+            $stmt = $db->query("SELECT id, name, email FROM customers ORDER BY name");
+            $customers = $stmt->fetchAll();
+            
+            $response['success'] = true;
+            $response['customers'] = $customers;
+            break;
+            
+        case 'get_items':
+            $stmt = $db->query("SELECT id, code, description, unit_price, tax_rate FROM items ORDER BY code");
+            $items = $stmt->fetchAll();
+            
+            $response['success'] = true;
+            $response['items'] = $items;
+            break;
+            
+        default:
+            $response['message'] = 'Invalid action';
+            break;
+    }
+} catch (PDOException $e) {
+    if ($db->inTransaction()) {
+        $db->rollBack();
+    }
+    $response['message'] = 'Database error: ' . $e->getMessage();
+    error_log($e->getMessage());
+} catch (Exception $e) {
+    $response['message'] = 'Error: ' . $e->getMessage();
+}
+
+echo json_encode($response);
+?>

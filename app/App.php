@@ -54,6 +54,10 @@ class App
             require_once __DIR__ . '/../app/Views/invoice.php';
         });
 
+        $this->router->get('/preview', function () {
+            require_once __DIR__ . '/../app/Views/preview.php';
+        });
+
         $this->router->get('/api/invoices', [InvoiceController::class, 'index']);
         $this->router->get('/api/invoices/{id}', [InvoiceController::class, 'show']);
         $this->router->post('/api/invoices', [InvoiceController::class, 'store']);

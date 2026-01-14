@@ -6,9 +6,17 @@ class App
 {
     public function run()
     {
-        // Basic application entry point
-        // TODO: Implement routing to controllers
-        echo "App is running";
+        try {
+            $db = Database::getInstance();
+            $connection = $db->getConnection();
+            
+            if ($connection) {
+                echo "DB Connected";
+            }
+        } catch (\PDOException $e) {
+            http_response_code(500);
+            echo "Database connection failed: " . $e->getMessage();
+        }
     }
 }
 ?>

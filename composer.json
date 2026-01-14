@@ -1,0 +1,18 @@
+{
+    "name": "keith/d6assesment",
+    "description": "Simple Invoice Capture UI and API",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Keith\\D6assesment\\": "app/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Keith Kennedy",
+            "email": "keithkennedy5@gmail.com"
+        }
+    ],
+    "require": {}
+}

@@ -48,7 +48,7 @@ class App
      *
      * @return void
      */
-    private function setupRoutes():void
+    private function setupRoutes(): void
     {
         $this->router->get('/', function () {
             require_once __DIR__ . '/../app/Views/invoice.php';
@@ -91,7 +91,7 @@ class App
      *
      * @return void
      */
-    public function run():void
+    public function run(): void
     {
         try {
             $db = Database::getInstance();

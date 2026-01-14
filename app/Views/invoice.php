@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Invoice View
  *
@@ -8,6 +9,7 @@
  *
  * @package Keith\D6assesment\Views
  */
+
 ?>
 <!DOCTYPE html>
 <html lang="en">

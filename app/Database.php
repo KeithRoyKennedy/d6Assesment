@@ -68,7 +68,7 @@ class Database
      *
      * @return Database Singleton database instance
      */
-    public static function getInstance():database
+    public static function getInstance(): database
     {
         if (self::$instance === null) {
             self::$instance = new self();
@@ -81,7 +81,7 @@ class Database
      *
      * @return PDO Active database connection
      */
-    public function getConnection():pdo
+    public function getConnection(): pdo
     {
         return $this->connection;
     }

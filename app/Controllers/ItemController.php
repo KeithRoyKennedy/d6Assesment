@@ -78,7 +78,7 @@ class ItemController extends Controller
      *
      * @return void
      */
-    public function store():void
+    public function store(): void
     {
         try {
             $data = $this->getRequestData();

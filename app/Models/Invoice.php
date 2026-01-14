@@ -32,7 +32,7 @@ class Invoice extends Model
      * @param array $data Invoice data (invoice_number, customer_id, dates, totals, etc.)
      * @return string Last insert ID
      */
-    public function create(array $data):string
+    public function create(array $data): string
     {
         return $this->insert($data);
     }
@@ -76,7 +76,7 @@ class Invoice extends Model
      *
      * @return array Array of invoices with customer names
      */
-    public function findAllWithCustomers():array
+    public function findAllWithCustomers(): array
     {
         $sql = "SELECT i.*, c.name as customer_name
                 FROM {$this->table} i

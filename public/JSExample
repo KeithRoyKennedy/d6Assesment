@@ -1,0 +1,283 @@
+// js/script.js
+document.addEventListener('DOMContentLoaded', function() {
+    let itemCount = 0;
+    
+    // Initialize
+    loadRecentInvoices();
+    addNewItem();
+    
+    // Event Listeners
+    document.getElementById('addItemBtn').addEventListener('click', addNewItem);
+    document.getElementById('resetBtn').addEventListener('click', resetForm);
+    document.getElementById('invoiceForm').addEventListener('submit', saveInvoice);
+    
+    // Update totals when dates change
+    document.getElementById('invoiceDate').addEventListener('change', validateDates);
+    document.getElementById('dueDate').addEventListener('change', validateDates);
+    
+    // Customer selection
+    document.getElementById('customerSelect').addEventListener('change', function(e) {
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        const email = selectedOption.dataset.email;
+        if (email) {
+            showMessage(`Selected customer: ${selectedOption.text} (${email})`, 'success');
+        }
+    });
+    
+    function addNewItem() {
+        const itemsList = document.getElementById('itemsList');
+        const template = document.getElementById('itemTemplate');
+        const newItem = template.cloneNode(true);
+        
+        newItem.id = '';
+        newItem.style.display = 'block';
+        
+        // Update indexes
+        const html = newItem.innerHTML.replace(/items\[0\]/g, `items[${itemCount}]`);
+        newItem.innerHTML = html;
+        
+        itemsList.appendChild(newItem);
+        
+        // Add event listeners to new inputs
+        const inputs = newItem.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            if (input.name.includes('quantity') || input.name.includes('unit_price') || input.name.includes('tax_rate')) {
+                input.addEventListener('input', updateTotals);
+            }
+        });
+        
+        itemCount++;
+        updateTotals();
+    }
+    
+    function removeItem(button) {
+        const row = button.closest('.item-row');
+        if (row && document.querySelectorAll('.item-row').length > 1) {
+            row.remove();
+            updateTotals();
+        } else {
+            showMessage('At least one item is required', 'error');
+        }
+    }
+    
+    function updateItem(select) {
+        const row = select.closest('.item-row');
+        const option = select.options[select.selectedIndex];
+        
+        if (option.dataset.price) {
+            row.querySelector('.item-price-input').value = option.dataset.price;
+            row.querySelector('.item-tax-input').value = option.dataset.tax;
+            row.querySelector('.item-desc-input').value = option.dataset.desc;
+            updateLineTotal(select);
+        }
+    }
+    
+    function updateLineTotal(element) {
+        const row = element.closest('.item-row');
+        const qty = parseFloat(row.querySelector('.item-qty-input').value) || 0;
+        const price = parseFloat(row.querySelector('.item-price-input').value) || 0;
+        const tax = parseFloat(row.querySelector('.item-tax-input').value) || 0;
+        
+        const lineTotal = qty * price;
+        const lineTax = lineTotal * (tax / 100);
+        const totalWithTax = lineTotal + lineTax;
+        
+        row.querySelector('.line-total').textContent = totalWithTax.toFixed(2);
+        updateTotals();
+    }
+    
+    function updateTotals() {
+        let subtotal = 0;
+        let taxTotal = 0;
+        
+        document.querySelectorAll('.item-row').forEach(row => {
+            const qty = parseFloat(row.querySelector('.item-qty-input').value) || 0;
+            const price = parseFloat(row.querySelector('.item-price-input').value) || 0;
+            const tax = parseFloat(row.querySelector('.item-tax-input').value) || 0;
+            
+            const lineTotal = qty * price;
+            const lineTax = lineTotal * (tax / 100);
+            
+            subtotal += lineTotal;
+            taxTotal += lineTax;
+        });
+        
+        const grandTotal = subtotal + taxTotal;
+        
+        document.getElementById('subtotal').textContent = subtotal.toFixed(2);
+        document.getElementById('taxTotal').textContent = taxTotal.toFixed(2);
+        document.getElementById('grandTotal').textContent = grandTotal.toFixed(2);
+    }
+    
+    function validateDates() {
+        const invoiceDate = new Date(document.getElementById('invoiceDate').value);
+        const dueDate = new Date(document.getElementById('dueDate').value);
+        
+        if (dueDate < invoiceDate) {
+            showMessage('Due date cannot be earlier than invoice date', 'error');
+            document.getElementById('dueDate').value = document.getElementById('invoiceDate').value;
+        }
+    }
+    
+    async function saveInvoice(e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const saveBtn = document.getElementById('saveBtn');
+        const originalText = saveBtn.innerHTML;
+        
+        // Validate
+        const customerId = document.getElementById('customerSelect').value;
+        if (!customerId) {
+            showMessage('Please select a customer', 'error');
+            return;
+        }
+        
+        // Validate items
+        const items = [];
+        let hasEmptyItems = false;
+        
+        document.querySelectorAll('.item-row').forEach((row, index) => {
+            const description = row.querySelector('.item-desc-input').value;
+            const quantity = row.querySelector('.item-qty-input').value;
+            const unitPrice = row.querySelector('.item-price-input').value;
+            
+            if (!description || !quantity || !unitPrice) {
+                hasEmptyItems = true;
+            }
+            
+            items.push({
+                item_id: row.querySelector('.item-select').value,
+                description: description,
+                quantity: quantity,
+                unit_price: unitPrice,
+                tax_rate: row.querySelector('.item-tax-input').value
+            });
+        });
+        
+        if (hasEmptyItems) {
+            showMessage('Please fill all item fields', 'error');
+            return;
+        }
+        
+        // Prepare data
+        const invoiceData = {
+            customer_id: customerId,
+            invoice_date: document.getElementById('invoiceDate').value,
+            due_date: document.getElementById('dueDate').value,
+            notes: document.getElementById('notes').value,
+            items: items
+        };
+        
+        // Show loading
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        saveBtn.disabled = true;
+        
+        try {
+            const response = await fetch('api.php?action=save_invoice', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(invoiceData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showMessage(`Invoice saved successfully! Invoice #: ${result.invoice_number}`, 'success');
+                resetForm();
+                loadRecentInvoices();
+            } else {
+                showMessage(result.message || 'Error saving invoice', 'error');
+                if (result.errors) {
+                    console.error('Validation errors:', result.errors);
+                }
+            }
+        } catch (error) {
+            showMessage('Network error. Please try again.', 'error');
+            console.error('Error:', error);
+        } finally {
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        }
+    }
+    
+    function resetForm() {
+        document.getElementById('invoiceForm').reset();
+        document.getElementById('invoiceDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('dueDate').value = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            .toISOString().split('T')[0];
+        
+        // Clear items and add one
+        document.getElementById('itemsList').innerHTML = '';
+        itemCount = 0;
+        addNewItem();
+        updateTotals();
+        
+        // Generate new invoice number
+        document.getElementById('invoiceNumberDisplay').textContent = 
+            'INV-' + new Date().getFullYear() + 
+            ('0' + (new Date().getMonth() + 1)).slice(-2) + 
+            '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+        
+        showMessage('Form reset successfully', 'success');
+    }
+    
+    async function loadRecentInvoices() {
+        const container = document.getElementById('recentInvoices');
+        
+        try {
+            const response = await fetch('api.php?action=get_recent_invoices&limit=5');
+            const result = await response.json();
+            
+            if (result.success) {
+                container.innerHTML = result.invoices.map(invoice => `
+                    <div class="invoice-card">
+                        <div class="invoice-card-header">
+                            <span class="invoice-number">${invoice.invoice_number}</span>
+                            <span class="invoice-status status-${invoice.status}">${invoice.status}</span>
+                        </div>
+                        <div class="invoice-details">
+                            <div><strong>Customer:</strong> ${invoice.customer_name}</div>
+                            <div><strong>Date:</strong> ${new Date(invoice.invoice_date).toLocaleDateString()}</div>
+                            <div><strong>Total:</strong> $${parseFloat(invoice.total).toFixed(2)}</div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                if (result.invoices.length === 0) {
+                    container.innerHTML = '<div class="loading">No invoices found</div>';
+                }
+            } else {
+                container.innerHTML = '<div class="loading">Error loading invoices</div>';
+            }
+        } catch (error) {
+            container.innerHTML = '<div class="loading">Error loading invoices</div>';
+        }
+    }
+    
+    function showMessage(text, type = 'success') {
+        const messages = document.getElementById('messages');
+        const message = document.createElement('div');
+        message.className = `message ${type}`;
+        message.innerHTML = `
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+            ${text}
+        `;
+        
+        messages.appendChild(message);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            message.style.opacity = '0';
+            message.style.transform = 'translateX(100%)';
+            setTimeout(() => message.remove(), 300);
+        }, 5000);
+    }
+    
+    // Make functions available globally for inline handlers
+    window.updateItem = updateItem;
+    window.updateLineTotal = updateLineTotal;
+    window.removeItem = removeItem;
+});

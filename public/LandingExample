@@ -1,0 +1,196 @@
+<?php
+// index.php
+require_once 'config.php';
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Capture System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-file-invoice-dollar"></i> Invoice Capture System</h1>
+            <p class="subtitle">Create and manage invoices</p>
+        </header>
+
+        <main>
+            <div class="app-container">
+                <!-- Left Panel: Invoice Form -->
+                <div class="left-panel">
+                    <form id="invoiceForm" class="invoice-form">
+                        <div class="form-header">
+                            <h2><i class="fas fa-edit"></i> New Invoice</h2>
+                            <div class="invoice-number">
+                                <span>Invoice #:</span>
+                                <strong id="invoiceNumberDisplay"><?php echo Config::generateInvoiceNumber(); ?></strong>
+                            </div>
+                        </div>
+
+                        <!-- Customer Selection -->
+                        <div class="form-section">
+                            <h3><i class="fas fa-user"></i> Customer Information</h3>
+                            <div class="form-group">
+                                <label for="customerSelect">Select Customer *</label>
+                                <select id="customerSelect" name="customer_id" required>
+                                    <option value="">Choose a customer...</option>
+                                    <?php
+                                    try {
+                                        $db = Config::getDB();
+                                        $stmt = $db->query("SELECT id, name, email FROM customers ORDER BY name");
+                                        while ($customer = $stmt->fetch()) {
+                                            echo "<option value='{$customer['id']}' data-email='{$customer['email']}'>{$customer['name']}</option>";
+                                        }
+                                    } catch (PDOException $e) {
+                                        echo "<option value=''>Error loading customers</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="invoiceDate">Invoice Date *</label>
+                                    <input type="date" id="invoiceDate" name="invoice_date" 
+                                           value="<?php echo date('Y-m-d'); ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="dueDate">Due Date *</label>
+                                    <input type="date" id="dueDate" name="due_date" 
+                                           value="<?php echo date('Y-m-d', strtotime('+30 days')); ?>" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Line Items -->
+                        <div class="form-section">
+                            <div class="section-header">
+                                <h3><i class="fas fa-list"></i> Line Items</h3>
+                                <button type="button" id="addItemBtn" class="btn btn-secondary">
+                                    <i class="fas fa-plus"></i> Add Item
+                                </button>
+                            </div>
+                            
+                            <div class="items-container">
+                                <div class="items-header">
+                                    <div class="item-col item-desc">Description</div>
+                                    <div class="item-col item-qty">Qty</div>
+                                    <div class="item-col item-price">Unit Price</div>
+                                    <div class="item-col item-tax">Tax %</div>
+                                    <div class="item-col item-total">Total</div>
+                                    <div class="item-col item-action">Action</div>
+                                </div>
+                                <div id="itemsList">
+                                    <!-- Dynamic items will be added here -->
+                                </div>
+                            </div>
+                            
+                            <div class="item-template" id="itemTemplate" style="display: none;">
+                                <div class="item-row">
+                                    <div class="item-col item-desc">
+                                        <select class="item-select" name="items[0][item_id]" onchange="updateItem(this)">
+                                            <option value="">Select item...</option>
+                                            <?php
+                                            try {
+                                                $stmt = $db->query("SELECT id, code, description, unit_price, tax_rate FROM items ORDER BY code");
+                                                while ($item = $stmt->fetch()) {
+                                                    echo "<option value='{$item['id']}' 
+                                                          data-price='{$item['unit_price']}' 
+                                                          data-tax='{$item['tax_rate']}' 
+                                                          data-desc='{$item['description']}'>
+                                                          {$item['code']} - {$item['description']}
+                                                          </option>";
+                                                }
+                                            } catch (PDOException $e) {
+                                                echo "<option value=''>Error loading items</option>";
+                                            }
+                                            ?>
+                                        </select>
+                                        <input type="text" class="item-desc-input" name="items[0][description]" 
+                                               placeholder="Description" oninput="updateLineTotal(this)" required>
+                                    </div>
+                                    <div class="item-col item-qty">
+                                        <input type="number" class="item-qty-input" name="items[0][quantity]" 
+                                               value="1" min="0.01" step="0.01" oninput="updateLineTotal(this)" required>
+                                    </div>
+                                    <div class="item-col item-price">
+                                        <input type="number" class="item-price-input" name="items[0][unit_price]" 
+                                               value="0" min="0" step="0.01" oninput="updateLineTotal(this)" required>
+                                    </div>
+                                    <div class="item-col item-tax">
+                                        <input type="number" class="item-tax-input" name="items[0][tax_rate]" 
+                                               value="0" min="0" max="100" step="0.01" oninput="updateLineTotal(this)" required>
+                                    </div>
+                                    <div class="item-col item-total">
+                                        <span class="line-total">0.00</span>
+                                    </div>
+                                    <div class="item-col item-action">
+                                        <button type="button" class="btn-remove" onclick="removeItem(this)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="form-section">
+                            <h3><i class="fas fa-sticky-note"></i> Notes</h3>
+                            <div class="form-group">
+                                <textarea id="notes" name="notes" rows="3" 
+                                          placeholder="Add any additional notes or terms..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Totals -->
+                        <div class="totals-section">
+                            <div class="total-row">
+                                <span>Subtotal:</span>
+                                <span id="subtotal">0.00</span>
+                            </div>
+                            <div class="total-row">
+                                <span>Tax Total:</span>
+                                <span id="taxTotal">0.00</span>
+                            </div>
+                            <div class="total-row grand-total">
+                                <span>Grand Total:</span>
+                                <span id="grandTotal">0.00</span>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-actions">
+                            <button type="button" id="resetBtn" class="btn btn-secondary">
+                                <i class="fas fa-redo"></i> Reset
+                            </button>
+                            <button type="submit" id="saveBtn" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Invoice
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Right Panel: Recent Invoices -->
+                <div class="right-panel">
+                    <h2><i class="fas fa-history"></i> Recent Invoices</h2>
+                    <div id="recentInvoices">
+                        <div class="loading">Loading recent invoices...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Invoice Capture System &copy; <?php echo date('Y'); ?></p>
+        </footer>
+    </div>
+
+    <!-- Messages Container -->
+    <div id="messages"></div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

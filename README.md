@@ -217,6 +217,44 @@ The application uses the following tables:
 - `DELETE /api/items/{id}` - Delete item
 - `POST /api/items/search` - Search items by description
 
+## API Testing
+
+### Postman Collection
+
+A complete Postman collection is included for testing all API endpoints.
+
+**Import the Collection:**
+
+1. Open Postman
+2. Click "Import" button
+3. Select the file: `d6Assessment_Postman_Collection.json`
+4. The collection will be imported with all endpoints organized by resource
+
+**Configure Environment:**
+
+The collection includes a `base_url` variable. Update it based on your setup:
+
+- **DDEV**: `https://d6assesment.ddev.site` (default)
+- **Local PHP**: `http://invoice.local` or `http://localhost`
+
+To change the base URL:
+1. Click on the collection name
+2. Go to "Variables" tab
+3. Update the `base_url` value
+4. Save changes
+
+**Available Requests:**
+
+The collection includes:
+- **Invoices** (7 requests): CRUD operations, status updates, invoice number generation
+- **Customers** (6 requests): CRUD operations, search functionality
+- **Items** (6 requests): CRUD operations, search functionality
+
+Each request includes:
+- Pre-configured headers
+- Sample request bodies with realistic data
+- Descriptions of what each endpoint does
+
 ## Development
 
 ### Running with DDEV

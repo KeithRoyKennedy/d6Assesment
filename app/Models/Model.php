@@ -56,10 +56,10 @@ abstract class Model
     /**
      * Find a single record by ID
      *
-     * @param int $id Record ID
+     * @param string $id Record ID
      * @return array|false Record data or false if not found
      */
-    public function findById(int $id): array|false
+    public function findById(string $id): array|false
     {
         $stmt = $this->db->prepare("SELECT * FROM {$this->table} WHERE id = :id");
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);

@@ -132,6 +132,10 @@ class Router
             if ($route['method'] === $requestMethod && preg_match($pattern, $requestUri, $matches)) {
                 array_shift($matches);
 
+                $matches = array_map(function ($match) {
+                    return is_numeric($match) ? (int)$match : $match;
+                }, $matches);
+
                 if (is_array($route['callback'])) {
                     $controller = new $route['callback'][0]();
                     $method = $route['callback'][1];

@@ -52,10 +52,10 @@ class ItemController extends Controller
     /**
      * Get a single item by ID
      *
-     * @param int $id Item ID
+     * @param string $id Item ID
      * @return void
      */
-    public function show(int $id): void
+    public function show(string $id): void
     {
         try {
             $item = $this->itemModel->findById($id);
@@ -109,10 +109,10 @@ class ItemController extends Controller
      *
      * Validates that item code is unique if changed
      *
-     * @param int $id Item ID
+     * @param string $id Item ID
      * @return void
      */
-    public function update(int $id): void
+    public function update(string $id): void
     {
         try {
             $data = $this->getRequestData();
@@ -141,10 +141,10 @@ class ItemController extends Controller
     /**
      * Delete an item
      *
-     * @param int $id Item ID
+     * @param string $id Item ID
      * @return void
      */
-    public function destroy(int $id): void
+    public function destroy(string $id): void
     {
         try {
             $item = $this->itemModel->findById($id);

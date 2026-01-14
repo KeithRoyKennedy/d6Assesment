@@ -1,3 +1,14 @@
+<?php
+/**
+ * Invoice View
+ *
+ * Main frontend interface for the Invoice Capture System.
+ * Provides forms for creating invoices, managing customers and items,
+ * and displays recent invoice history.
+ *
+ * @package Keith\D6assesment\Views
+ */
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -117,6 +128,99 @@
     </div>
 
     <div id="messages"></div>
+
+    <!-- Add Customer Modal -->
+    <div id="customerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-plus"></i> Add New Customer</h2>
+                <button type="button" class="modal-close" id="closeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="customerForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="customerName">Customer Name *</label>
+                        <input type="text" id="customerName" name="name" required 
+                               placeholder="Enter customer name">
+                    </div>
+                    <div class="form-group">
+                        <label for="customerEmail">Email *</label>
+                        <input type="email" id="customerEmail" name="email" required 
+                               placeholder="customer@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="customerPhone">Phone *</label>
+                        <input type="tel" id="customerPhone" name="phone"  required 
+                               pattern="[0-9\-\+\(\)\s]+" 
+                               title="Please enter a valid phone number
+                               (numbers, spaces, hyphens, parentheses, and + allowed)"
+                               placeholder="555-1234 or +1-555-1234">
+                    </div>
+                    <div class="form-group">
+                        <label for="customerAddress">Address</label>
+                        <textarea id="customerAddress" name="address" rows="3" 
+                                  placeholder="Enter customer address"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelCustomer">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="saveCustomer">
+                        <i class="fas fa-save"></i> Save Customer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Item Modal -->
+    <div id="itemModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-box-open"></i> Add New Item</h2>
+                <button type="button" class="modal-close" id="closeItemModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="itemForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="itemCode">Item Code *</label>
+                        <input type="text" id="itemCode" name="code" required 
+                               placeholder="e.g., SRV-001">
+                    </div>
+                    <div class="form-group">
+                        <label for="itemDescription">Description *</label>
+                        <input type="text" id="itemDescription" name="description" required 
+                               placeholder="Enter item description">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="itemUnitPrice">Unit Price *</label>
+                            <input type="number" id="itemUnitPrice" name="unit_price" required 
+                                   min="0" step="0.01" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="itemTaxRate">Tax Rate (%) *</label>
+                            <input type="number" id="itemTaxRate" name="tax_rate" required 
+                                   min="0" max="100" step="0.01" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelItem">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="saveItem">
+                        <i class="fas fa-save"></i> Save Item
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script src="/assets/js/app.js"></script>
 </body>

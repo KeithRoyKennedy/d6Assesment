@@ -1,24 +1,56 @@
 <?php
 
+/**
+ * Application Class
+ *
+ * Main application class that bootstraps the Invoice Capture System.
+ * Configures routing, initializes database connection, and handles request processing.
+ *
+ * @package Keith\D6assesment
+ */
+
 namespace Keith\D6assesment;
 
 use Keith\D6assesment\Controllers\InvoiceController;
 use Keith\D6assesment\Controllers\CustomerController;
 use Keith\D6assesment\Controllers\ItemController;
 
+/**
+ * Main application class
+ */
 class App
 {
+    /**
+     * Router instance for handling HTTP requests
+     *
+     * @var Router
+     */
     private $router;
 
+    /**
+     * Constructor - initializes router and sets up routes
+     */
     public function __construct()
     {
         $this->router = new Router();
         $this->setupRoutes();
     }
 
-    private function setupRoutes()
+    /**
+     * Configure all application routes
+     *
+     * Defines routes for:
+     * - Frontend view (/)
+     * - Invoice API endpoints (/api/invoices/*)
+     * - Customer API endpoints (/api/customers/*)
+     * - Item API endpoints (/api/items/*)
+     * - 404 not found handler
+     *
+     * @return void
+     */
+    private function setupRoutes():void
     {
-        $this->router->get('/', function() {
+        $this->router->get('/', function () {
             require_once __DIR__ . '/../app/Views/invoice.php';
         });
 
@@ -44,14 +76,22 @@ class App
         $this->router->delete('/api/items/{id}', [ItemController::class, 'destroy']);
         $this->router->post('/api/items/search', [ItemController::class, 'search']);
 
-        $this->router->setNotFound(function() {
+        $this->router->setNotFound(function () {
             http_response_code(404);
             header('Content-Type: application/json');
             echo json_encode(['error' => 'Endpoint not found']);
         });
     }
 
-    public function run()
+    /**
+     * Run the application
+     *
+     * Initializes database connection and processes the current HTTP request.
+     * Handles exceptions and returns appropriate error responses.
+     *
+     * @return void
+     */
+    public function run():void
     {
         try {
             $db = Database::getInstance();
@@ -67,4 +107,3 @@ class App
         }
     }
 }
-?>
